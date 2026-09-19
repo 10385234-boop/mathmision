@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Misión - Aplicación Interactiva de Multiplicación</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;800;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        display: ['Fredoka', 'sans-serif'],
+                        orbitron: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        space: {
+                            950: '#030712',
+                            900: '#0b0c1e',
+                            800: '#141738',
+                            700: '#1e2352',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0b0c1e;
+            color: #f1f5f9;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
+        }
+
+        .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Glassmorphism cards */
+        .glass-card {
+            background: rgba(20, 23, 56, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .glass-card-glow {
+            background: rgba(20, 23, 56, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
+        }
+
+        /* Fullscreen container styling */
+        .app-simulated-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            background: #0b0c1e !important;
+            overflow-y: auto !important;
+        }
+
+        /* Custom glow buttons */
+        .btn-glow {
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        }
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+        }
+        .btn-glow:active {
+            transform: translateY(1px);
+        }
+
+        /* Canvas styling */
+        #gameCanvas {
+            touch-action: none;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            border-radius: 1rem;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        /* Scrollbar customization */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0c1e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body id="appContainer" class="h-full flex flex-col justify-between text-slate-100 min-h-screen">
+
+    <!-- Main Navigation Header -->
+    <header id="mainHeader" class="w-full bg-slate-900/90 border-b border-slate-800 backdrop-blur-md sticky top-0 z-40 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <!-- App Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/20">
+                    🚀
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold font-display tracking-wide bg-gradient-to-r from-amber-400 via-amber-200 to-indigo-300 bg-clip-text text-transparent">
+                        Math Misión
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">Aprende y Domina la Multiplicación Espacial</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tab Switcher -->
+            <div class="flex items-center bg-slate-950/80 p-1.5 rounded-xl border border-slate-800">
+                <button id="tabTutorBtn" onclick="switchTab('tutor')" class="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 bg-amber-500 text-slate-950 shadow-md">
+                    <span>📘</span> Tutor Paso a Paso
+                </button>
+                <button id="tabGameBtn" onclick="switchTab('game')" class="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 text-slate-300 hover:text-white">
+                    <span>🎮</span> Juego Espacial
+                </button>
+            </div>
+
+            <!-- Global Action Controls -->
+            <div class="flex items-center gap-2">
+                <button id="musicBtn" onclick="toggleMusic()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-200 flex items-center gap-2 transition-all">
+                    <span id="musicIcon">🎵</span> <span id="musicText">Música: OFF</span>
+                </button>
+
+                <button id="bleConnectBtn" onclick="connectBLE()" class="px-3 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition-all">
+                    📡 Conectar ESP32
+                </button>
+                <span id="bleStatus" class="text-xs font-bold text-slate-400 hidden sm:inline">Desconectado</span>
+
+                <button onclick="toggleFullscreen()" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white flex items-center gap-1.5 transition-all">
+                    <span>⛶</span> Pantalla Completa
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-3 md:p-6 flex flex-col justify-center">
+
+        <!-- TUTOR SECTION -->
+        <section id="tutorSection" class="w-full transition-all duration-300">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Tutor Left Controls Panel -->
+                <div class="lg:col-span-5 glass-card rounded-2xl p-5 space-y-5 shadow-2xl border border-amber-500/20">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-xl font-bold font-display text-amber-400 flex items-center gap-2">
+                            <span>✏️</span> Multiplicación Personalizada
+                        </h2>
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 font-bold">Interactiva</span>
+                    </div>
+
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Ingresa cualquier número para aprender la multiplicación. La solución se calculará al instante paso a paso en formato tradicional.
+                    </p>
+
+                    <!-- Interactive Inputs -->
+                    <div class="flex items-center justify-center gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <div class="flex flex-col items-center">
+                            <label class="text-xs font-bold text-slate-400 mb-1">Multiplicando</label>
+                            <input id="inputNum1" type="number" min="1" max="9999" value="342" oninput="onTutorInputChanged()" class="w-24 text-center text-xl font-black bg-slate-900 border-2 border-amber-500/50 focus:border-amber-400 rounded-lg py-2 text-amber-300 outline-none font-orbitron transition">
+                        </div>
+                        <span class="text-2xl font-black text-amber-400 mt-4">×</span>
+                        <div class="flex flex-col items-center">
+                            <label class="text-xs font-bold text-slate-400 mb-1">Multiplicador</label>
+                            <input id="inputNum2" type="number" min="1" max="999" value="25" oninput="onTutorInputChanged()" class="w-20 text-center text-xl font-black bg-slate-900 border-2 border-indigo-500/50 focus:border-amber-400 rounded-lg py-2 text-indigo-300 outline-none font-orbitron transition">
+                        </div>
+                    </div>
+
+                    <!-- Step Navigation Controls -->
+                    <div class="space-y-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-300">Navegación de Pasos:</span>
+                            <span id="stepProgressTag" class="text-xs font-bold text-amber-400">Paso 1 de 4</span>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="changeStep(-1)" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition text-xs font-bold">
+                                ◀ Anterior
+                            </button>
+                            <button id="autoplayBtn" onclick="toggleAutoplay()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black shadow-md transition text-xs flex items-center gap-1.5">
+                                <span id="autoplayIcon">▶</span> <span id="autoplayText">Auto-reproducir</span>
+                            </button>
+                            <button onclick="changeStep(1)" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition text-xs font-bold">
+                                Siguiente ▶
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Current Step Narrative Explanation -->
+                    <div class="p-4 rounded-xl bg-indigo-950/50 border border-indigo-800/60 min-h-[90px]">
+                        <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+                            💡 Explicación Detallada:
+                        </h3>
+                        <p id="tutorNarrative" class="text-xs sm:text-sm font-medium text-slate-200 leading-relaxed">
+                            Cargando tutor paso a paso...
+                        </p>
+                    </div>
+
+                    <!-- Quick Self-Test Practice -->
+                    <div class="pt-2 border-t border-slate-800/80">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-300">🎯 Autoevaluación Rápida:</span>
+                            <button onclick="generateRandomPractice()" class="text-[11px] text-amber-400 hover:underline font-bold">Nueva Cuenta</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="practiceProblemText" class="font-orbitron text-sm font-bold text-amber-300 bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 whitespace-nowrap">
+                                34 × 12 = ?
+                            </span>
+                            <input type="number" id="practiceInput" placeholder="Respuesta" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white outline-none focus:border-amber-400 text-center">
+                            <button onclick="checkPracticeAnswer()" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs whitespace-nowrap">
+                                Validar
+                            </button>
+                        </div>
+                        <div id="practiceFeedback" class="text-xs font-bold mt-1.5 h-4 text-center"></div>
+                    </div>
+                </div>
+
+                <!-- Tutor Right Board Display -->
+                <div class="lg:col-span-7 glass-card rounded-2xl p-6 flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden border border-indigo-500/20">
+                    <div class="w-full flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                        <h2 class="text-lg font-bold font-display text-indigo-300 flex items-center gap-2">
+                            <span>📊</span> Pizarra de Algoritmo Tradicional
+                        </h2>
+                        <span class="text-xs text-slate-400">Alineación exacta por columnas</span>
+                    </div>
+
+                    <!-- Notebook Column Alignment Container -->
+                    <div id="verticalMathBoard" class="font-mono text-xl sm:text-2xl font-bold tracking-widest text-slate-100 space-y-1.5 p-6 bg-slate-950 rounded-2xl border-2 border-slate-800 shadow-2xl min-w-[280px] text-right">
+                        <!-- Rendered dynamically by renderTutorStep() -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- GAME SECTION -->
+        <section id="gameSection" class="w-full hidden flex-col items-center">
+            
+            <!-- Game HUD Top Bar -->
+            <div class="w-full glass-card rounded-2xl p-3 mb-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+                
+                <!-- Player Mode Selection -->
+                <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button id="p1ModeBtn" onclick="setPlayerMode(1)" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition">
+                        👨‍🚀 1 Jugador
+                    </button>
+                    <button id="p2ModeBtn" onclick="setPlayerMode(2)" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+                        👥 2 Jugadores
+                    </button>
+                </div>
+
+                <!-- Difficulty Buttons -->
+                <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+                    <button id="diffEasyBtn" onclick="setDifficulty('easy')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition">
+                        ⭐ Fácil (2×2 Cifras)
+                    </button>
+                    <button id="diffMedBtn" onclick="setDifficulty('medium')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+                        ⭐⭐ Normal (3×2 Cifras)
+                    </button>
+                    <button id="diffHardBtn" onclick="setDifficulty('hard')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+                        ⭐⭐⭐ Difícil (3×3 Cifras)
+                    </button>
+                    <button id="diffExtremeBtn" onclick="setDifficulty('extreme')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition">
+                        🔥 Extremo (+Boss Láser)
+                    </button>
+                </div>
+
+                <!-- Score & Time HUD -->
+                <div class="flex items-center gap-3 text-xs font-extrabold">
+                    <div id="p1HudBox" class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-emerald-400 flex items-center gap-1">
+                        P1: <span id="p1Score" class="font-orbitron">0m</span> <span id="p1SlowBadge" class="hidden px-1 bg-red-500/20 text-red-400 text-[10px] rounded border border-red-500/40 animate-pulse">🐢 Lento</span>
+                    </div>
+                    <div id="p2HudBox" class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-sky-400 opacity-40 flex items-center gap-1">
+                        P2: <span id="p2Score" class="font-orbitron">0m</span> <span id="p2SlowBadge" class="hidden px-1 bg-red-500/20 text-red-400 text-[10px] rounded border border-red-500/40 animate-pulse">🐢 Lento</span>
+                    </div>
+                    <div id="stageHudBox" class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-amber-400">
+                        🚩 <span id="stageText" class="font-orbitron">Etapa 1/3</span>
+                    </div>
+                    <div class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-emerald-400">
+                        ⏳ <span id="gameTimer" class="font-orbitron">02:00</span>
+                    </div>
+                    <button onclick="returnToMainMenu()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">
+                        🏠 Menú
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-[16/9] max-h-[580px] flex items-center justify-center overflow-hidden rounded-2xl shadow-2xl border border-slate-800">
+                <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+                <!-- On-Screen Virtual Touch Controls -->
+                <div id="touchControls" class="absolute bottom-3 left-3 right-3 flex justify-between items-center z-10 pointer-events-none">
+                    <div class="grid grid-cols-3 gap-1 pointer-events-auto">
+                        <div></div>
+                        <button id="btnP1Up" class="w-10 h-10 rounded-xl bg-slate-900/90 border border-purple-500/50 text-purple-400 font-bold text-lg active:bg-purple-500 active:text-slate-950 shadow-lg select-none flex items-center justify-center">▲</button>
+                        <div></div>
+                        <button id="btnP1Left" class="w-10 h-10 rounded-xl bg-slate-900/90 border border-purple-500/50 text-purple-400 font-bold text-lg active:bg-purple-500 active:text-slate-950 shadow-lg select-none flex items-center justify-center">◀</button>
+                        <button id="btnP1Down" class="w-10 h-10 rounded-xl bg-slate-900/90 border border-purple-500/50 text-purple-400 font-bold text-lg active:bg-purple-500 active:text-slate-950 shadow-lg select-none flex items-center justify-center">▼</button>
+                        <button id="btnP1Right" class="w-10 h-10 rounded-xl bg-slate-900/90 border border-purple-500/50 text-purple-400 font-bold text-lg active:bg-purple-500 active:text-slate-950 shadow-lg select-none flex items-center justify-center">▶</button>
+                    </div>
+                    <div class="pointer-events-auto">
+                        <button id="btnP1Shoot" class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-500 text-white font-bold text-2xl active:scale-95 shadow-xl select-none flex items-center justify-center border border-purple-300/40">🚀</button>
+                    </div>
+                </div>
+
+                <!-- Start Screen Overlay -->
+                <div id="startOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center text-3xl mb-3 shadow-xl shadow-amber-500/20 animate-bounce">
+                        🪐
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-black font-display bg-gradient-to-r from-amber-400 via-amber-200 to-indigo-300 bg-clip-text text-transparent mb-2">
+                        Desafío Espacial
+                    </h2>
+                    <p class="text-slate-300 max-w-md text-xs sm:text-sm mb-4 leading-relaxed">
+                        ¡Pilota tu nave velozmente! Evita asteroides, responde preguntas matemáticas y alcanza la meta en 3 etapas.
+                    </p>
+                    <div class="bg-slate-900/90 border border-slate-800 p-3 rounded-xl mb-5 text-xs text-amber-300 font-bold space-y-1.5 text-left max-w-md">
+                        <p>🕹️ <b>Modo 1 Jugador:</b> 3 Etapas. ¡Si chocas con un asteroide, la partida se reinicia!</p>
+                        <p>🏁 <b>Modo 2 Jugadores (Carrera Independiente):</b> Aparece un desafío cada 10s tras responder. Si te atrasas respondiendo, solo se pausa tu temporizador. ¡El primero en completar las 3 etapas gana!</p>
+                        <p>🔥 <b>Modo Extremo:</b> ¡Un Boss espacial dispara rayos láser! ¡Si un láser te toca, pierdes!</p>
+                        <p>🎮 <b>Controles P1:</b> [W][A][S][D] / [Flechas] Mover | [Espacio] / [F] Disparar</p>
+                        <p>🎮 <b>Controles P2:</b> [Flechas] Mover | [Ctrl] Disparar</p>
+                    </div>
+                    <button onclick="startGameEngine()" class="btn-glow px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-lg rounded-2xl shadow-xl">
+                        🚀 ¡INICIAR VUELO!
+                    </button>
+                </div>
+
+                <!-- Split-Screen Independent Math Modals (P1 & P2) -->
+                <!-- P1 Math Overlay (Left Side) -->
+                <div id="mathModalP1" class="absolute left-0 top-0 bottom-0 w-full md:w-1/2 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 z-30 hidden border-r border-amber-500/30">
+                    <div class="glass-card-glow rounded-2xl p-4 w-full max-w-xs text-center space-y-3">
+                        <div class="inline-block px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[11px] font-bold border border-amber-500/30">
+                            👨‍🚀 P1: DESAFÍO CADA 10s
+                        </div>
+                        <div id="p1AttemptsTag" class="text-amber-400 font-orbitron text-xs font-bold">🎯 Intentos: 2/2</div>
+                        <div class="py-2 bg-slate-950/90 rounded-xl border border-slate-800">
+                            <div id="p1QuestionText" class="text-xl font-black font-orbitron text-amber-300 tracking-wider">12 × 5 = ?</div>
+                        </div>
+                        <div id="p1Feedback" class="text-[11px] font-bold h-3 text-amber-400"></div>
+                        <div id="p1ChoicesGrid" class="grid grid-cols-2 gap-2 w-full"></div>
+                    </div>
+                </div>
+
+                <!-- P2 Math Overlay (Right Side) -->
+                <div id="mathModalP2" class="absolute right-0 top-0 bottom-0 w-1/2 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 z-30 hidden border-l border-sky-500/30">
+                    <div class="glass-card-glow rounded-2xl p-4 w-full max-w-xs text-center space-y-3">
+                        <div class="inline-block px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 text-[11px] font-bold border border-sky-500/30">
+                            👨‍🚀 P2: DESAFÍO CADA 10s
+                        </div>
+                        <div id="p2AttemptsTag" class="text-sky-400 font-orbitron text-xs font-bold">🎯 Intentos: 2/2</div>
+                        <div class="py-2 bg-slate-950/90 rounded-xl border border-slate-800">
+                            <div id="p2QuestionText" class="text-xl font-black font-orbitron text-sky-300 tracking-wider">14 × 3 = ?</div>
+                        </div>
+                        <div id="p2Feedback" class="text-[11px] font-bold h-3 text-sky-400"></div>
+                        <div id="p2ChoicesGrid" class="grid grid-cols-2 gap-2 w-full"></div>
+                    </div>
+                </div>
+
+                <!-- Game Over Modal -->
+                <div id="gameOverModal" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 z-30 hidden">
+                    <div class="glass-card rounded-3xl p-6 max-w-md w-full text-center space-y-4 border border-red-500/30">
+                        <div class="text-5xl">💥</div>
+                        <h2 class="text-2xl sm:text-3xl font-black font-orbitron text-red-500">MISIÓN FALLIDA</h2>
+                        <p id="gameOverReason" class="text-xs sm:text-sm text-slate-300">
+                            Te has quedado sin vidas o se ha agotado el tiempo.
+                        </p>
+                        <div class="flex justify-center gap-3 pt-2">
+                            <button onclick="startGameEngine()" class="btn-glow px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition">
+                                🔄 Reintentar
+                            </button>
+                            <button onclick="returnToMainMenu()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition">
+                                🏠 Menú Principal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Victory Modal -->
+                <div id="victoryModal" class="absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 z-30 hidden">
+                    <div class="glass-card-glow rounded-3xl p-6 max-w-md w-full text-center space-y-4 border border-emerald-500/40">
+                        <div class="text-5xl">🏆</div>
+                        <h2 class="text-2xl sm:text-3xl font-black font-orbitron text-emerald-400">¡MISIÓN CUMPLIDA!</h2>
+                        <p class="text-xs sm:text-sm text-slate-300">
+                            ¡Has salvado la galaxia y dominado las multiplicaciones con éxito!
+                        </p>
+                        <div id="victoryStats" class="bg-slate-950/80 p-3 rounded-xl text-xs font-bold text-amber-300 border border-slate-800">
+                            Puntaje Final: <span id="finalScoreText" class="font-orbitron">0000</span>
+                        </div>
+                        <div class="flex justify-center gap-3 pt-2">
+                            <button onclick="startGameEngine()" class="btn-glow px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition">
+                                🚀 Jugar Otra Vez
+                            </button>
+                            <button onclick="returnToMainMenu()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition">
+                                🏠 Menú Principal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full bg-slate-900/60 border-t border-slate-800/60 py-3 text-center text-xs text-slate-500">
+        Math Misión Interactiva &copy; 2026 - Aprende Matemáticas Jugando
+    </footer>
+
+    <audio id="backgroundMusic" src="musica.mp3" loop preload="auto"></audio>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* Audio Synthesizer & Sound Effects */
+        let audioCtx = null;
+        let isMusicPlaying = false;
+        let musicNoteIndex = 0;
+        let musicTimer = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            const ctx = getAudioContext();
+            if (!ctx) return;
+
+            try {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'laser') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(800, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.12);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'bossLaser') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(60, now + 0.25);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'explosion') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(30, now + 0.25);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now);
+                    osc.frequency.setValueAtTime(659.25, now + 0.1);
+                    osc.frequency.setValueAtTime(783.99, now + 0.2);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(174.61, now + 0.12);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'lose') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(320, now);
+                    osc.frequency.linearRampToValueAtTime(220, now + 0.2);
+                    osc.frequency.linearRampToValueAtTime(140, now + 0.4);
+                    osc.frequency.linearRampToValueAtTime(90, now + 0.7);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+                    osc.start(now);
+                    osc.stop(now + 0.7);
+                }
+            } catch (e) {}
+        }
+
+        function toggleMusic() {
+            const music = document.getElementById('backgroundMusic');
+            const musicText = document.getElementById('musicText');
+            const musicIcon = document.getElementById('musicIcon');
+            if (!music) return;
+
+            if (music.paused) {
+                music.volume = 0.35;
+                music.play().then(() => {
+                    isMusicPlaying = true;
+                    musicText.textContent = "Música: ON";
+                    musicIcon.textContent = "🎶";
+                }).catch(() => {
+                    isMusicPlaying = false;
+                    musicText.textContent = "Música: OFF";
+                    musicIcon.textContent = "🎵";
+                    alert('No se pudo reproducir musica.mp3. Verifica que esté junto al HTML.');
+                });
+            } else {
+                music.pause();
+                isMusicPlaying = false;
+                musicText.textContent = "Música: OFF";
+                musicIcon.textContent = "🎵";
+            }
+        }
+
+        /* Fullscreen Navigation Toggle */
+        function toggleFullscreen() {
+            const container = document.getElementById('appContainer');
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen().catch(() => {
+                        container.classList.toggle('app-simulated-fullscreen');
+                    });
+                } else {
+                    container.classList.toggle('app-simulated-fullscreen');
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+                container.classList.remove('app-simulated-fullscreen');
+            }
+        }
+
+        /* Tab Switching Logic */
+        function switchTab(tab) {
+            const tutorSec = document.getElementById('tutorSection');
+            const gameSec = document.getElementById('gameSection');
+            const tabTutorBtn = document.getElementById('tabTutorBtn');
+            const tabGameBtn = document.getElementById('tabGameBtn');
+
+            if (tab === 'tutor') {
+                tutorSec.classList.remove('hidden');
+                gameSec.classList.add('hidden');
+                gameSec.classList.remove('flex');
+
+                tabTutorBtn.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 bg-amber-500 text-slate-950 shadow-md";
+                tabGameBtn.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 text-slate-300 hover:text-white";
+                stopGameEngine();
+            } else {
+                tutorSec.classList.add('hidden');
+                gameSec.classList.remove('hidden');
+                gameSec.classList.add('flex');
+
+                tabGameBtn.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 bg-amber-500 text-slate-950 shadow-md";
+                tabTutorBtn.className = "px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 flex items-center gap-2 text-slate-300 hover:text-white";
+            }
+        }
+
+        /* TUTOR LOGIC & STEP GENERATOR */
+        let currentTutorStep = 0;
+        let tutorStepsData = [];
+        let isAutoplay = false;
+        let autoplayInterval = null;
+        let currentPracticeProblem = null;
+
+        function onTutorInputChanged() {
+            const num1Input = document.getElementById('inputNum1');
+            const num2Input = document.getElementById('inputNum2');
+
+            let num1 = parseInt(num1Input.value) || 1;
+            let num2 = parseInt(num2Input.value) || 1;
+
+            if (num1 > 9999) { num1 = 9999; num1Input.value = 9999; }
+            if (num2 > 999) { num2 = 999; num2Input.value = 999; }
+
+            tutorStepsData = generateTutorSteps(num1, num2);
+            currentTutorStep = 0;
+            renderTutorStep();
+        }
+
+        function generateTutorSteps(n1, n2) {
+            const steps = [];
+            const str1 = n1.toString();
+            const str2 = n2.toString();
+
+            // Step 0: Overview / Initialization
+            steps.push({
+                title: "Inicio del Algoritmo",
+                narrative: `Alineamos verticalmente los números. Colocamos el multiplicando (${n1}) arriba y el multiplicador (${n2}) abajo.`,
+                n1: n1,
+                n2: n2,
+                activeDigitIndex2: -1,
+                activeDigitIndex1: -1,
+                partialProducts: [],
+                carries: [],
+                finalResult: null
+            });
+
+            const num2Digits = str2.split('').reverse();
+            let accumulatedPartials = [];
+
+            for (let i = 0; i < num2Digits.length; i++) {
+                const d2 = parseInt(num2Digits[i]);
+                const stepCarries = new Array(str1.length + 1).fill(0);
+                let carry = 0;
+                let currentPartialStr = "";
+
+                const num1Digits = str1.split('').reverse();
+                for (let j = 0; j < num1Digits.length; j++) {
+                    const d1 = parseInt(num1Digits[j]);
+                    const prod = (d1 * d2) + carry;
+                    const digitRes = prod % 10;
+                    carry = Math.floor(prod / 10);
+                    
+                    stepCarries[j] = carry;
+                    currentPartialStr = digitRes + currentPartialStr;
+
+                    steps.push({
+                        title: `Multiplicando cifra (${d2})`,
+                        narrative: `Multiplicamos ${d1} × ${d2} ${carry > 0 ? `+ acarreo anterior` : ''} = ${prod}. Escribimos ${digitRes} ${carry > 0 ? `y nos llevamos ${carry}` : ''}.`,
+                        n1: n1,
+                        n2: n2,
+                        activeDigitIndex2: str2.length - 1 - i,
+                        activeDigitIndex1: str1.length - 1 - j,
+                        partialProducts: [...accumulatedPartials],
+                        currentBuildingPartial: currentPartialStr + '&nbsp;'.repeat(i),
+                        carries: stepCarries,
+                        finalResult: null
+                    });
+                }
+
+                if (carry > 0) {
+                    currentPartialStr = carry + currentPartialStr;
+                }
+
+                const finalPartialVal = parseInt(currentPartialStr) * Math.pow(10, i);
+                accumulatedPartials.push({
+                    val: finalPartialVal,
+                    rawStr: currentPartialStr,
+                    shift: i
+                });
+            }
+
+            // Final Sum Step
+            const totalSum = n1 * n2;
+            steps.push({
+                title: "Suma de Productos Parciales",
+                narrative: `Sumamos todos los productos parciales obtenidos para conseguir el resultado final: ¡${totalSum.toLocaleString()}!`,
+                n1: n1,
+                n2: n2,
+                activeDigitIndex2: -1,
+                activeDigitIndex1: -1,
+                partialProducts: accumulatedPartials,
+                carries: [],
+                finalResult: totalSum
+            });
+
+            return steps;
+        }
+
+        function renderTutorStep() {
+            if (!tutorStepsData || tutorStepsData.length === 0) return;
+
+            const step = tutorStepsData[currentTutorStep];
+            const board = document.getElementById('verticalMathBoard');
+            const narrative = document.getElementById('tutorNarrative');
+            const progressTag = document.getElementById('stepProgressTag');
+
+            progressTag.textContent = `Paso ${currentTutorStep + 1} de ${tutorStepsData.length}`;
+            narrative.textContent = step.narrative;
+
+            let html = '';
+
+            // Carry row display
+            if (step.carries && step.carries.some(c => c > 0)) {
+                html += `<div class="text-amber-400 text-sm tracking-widest h-6 flex justify-end gap-2 pr-1 font-orbitron">`;
+                step.carries.forEach(c => {
+                    html += `<span>${c > 0 ? c : '&nbsp;'}</span>`;
+                });
+                html += `</div>`;
+            } else {
+                html += `<div class="h-6"></div>`;
+            }
+
+            // Multiplicand (n1)
+            const n1Str = step.n1.toString();
+            html += `<div class="flex justify-end gap-1">`;
+            for (let i = 0; i < n1Str.length; i++) {
+                const isHl = i === step.activeDigitIndex1;
+                html += `<span class="${isHl ? 'bg-amber-500 text-slate-950 px-1 rounded transform scale-110' : 'text-slate-100'}">${n1Str[i]}</span>`;
+            }
+            html += `</div>`;
+
+            // Multiplier (n2)
+            const n2Str = step.n2.toString();
+            html += `<div class="flex justify-end items-center gap-1 border-b-2 border-indigo-500 pb-1">`;
+            html += `<span class="text-indigo-400 font-bold mr-3">×</span>`;
+            for (let i = 0; i < n2Str.length; i++) {
+                const isHl = i === step.activeDigitIndex2;
+                html += `<span class="${isHl ? 'bg-indigo-500 text-white px-1 rounded transform scale-110' : 'text-slate-200'}">${n2Str[i]}</span>`;
+            }
+            html += `</div>`;
+
+            // Partial Products
+            step.partialProducts.forEach((p) => {
+                const spaces = '&nbsp;'.repeat(p.shift);
+                html += `<div class="text-emerald-400 flex justify-end tracking-widest">${p.rawStr}${spaces}</div>`;
+            });
+
+            if (step.currentBuildingPartial) {
+                html += `<div class="text-amber-300 flex justify-end tracking-widest border-b border-dashed border-amber-500/50">${step.currentBuildingPartial}</div>`;
+            }
+
+            // Final Result Line
+            if (step.finalResult !== null) {
+                html += `<div class="border-t-2 border-emerald-400 pt-1 text-emerald-300 font-black text-2xl sm:text-3xl tracking-widest flex justify-end font-orbitron">`;
+                html += `${step.finalResult.toLocaleString()}`;
+                html += `</div>`;
+            }
+
+            board.innerHTML = html;
+        }
+
+        function changeStep(delta) {
+            currentTutorStep += delta;
+            if (currentTutorStep < 0) currentTutorStep = 0;
+            if (currentTutorStep >= tutorStepsData.length) currentTutorStep = tutorStepsData.length - 1;
+            renderTutorStep();
+        }
+
+        function toggleAutoplay() {
+            isAutoplay = !isAutoplay;
+            const btnText = document.getElementById('autoplayText');
+            const btnIcon = document.getElementById('autoplayIcon');
+
+            if (isAutoplay) {
+                btnText.textContent = "Pausar";
+                btnIcon.textContent = "⏸";
+
+                autoplayInterval = setInterval(() => {
+                    if (currentTutorStep < tutorStepsData.length - 1) {
+                        currentTutorStep++;
+                        renderTutorStep();
+                    } else {
+                        toggleAutoplay();
+                    }
+                }, 1500);
+            } else {
+                btnText.textContent = "Auto-reproducir";
+                btnIcon.textContent = "▶";
+                if (autoplayInterval) clearInterval(autoplayInterval);
+            }
+        }
+
+        /* Practice Problem Generator */
+        function generateRandomPractice() {
+            const n1 = Math.floor(Math.random() * 40) + 10;
+            const n2 = Math.floor(Math.random() * 15) + 2;
+            currentPracticeProblem = { n1, n2, ans: n1 * n2 };
+
+            document.getElementById('practiceProblemText').textContent = `${n1} × ${n2} = ?`;
+            document.getElementById('practiceInput').value = '';
+            document.getElementById('practiceFeedback').textContent = '';
+        }
+
+        function checkPracticeAnswer() {
+            if (!currentPracticeProblem) return;
+            const val = parseInt(document.getElementById('practiceInput').value);
+            const feedback = document.getElementById('practiceFeedback');
+
+            if (val === currentPracticeProblem.ans) {
+                playSound('correct');
+                feedback.className = "text-xs font-bold mt-1.5 h-4 text-center text-emerald-400";
+                feedback.textContent = "🎉 ¡Excelente! Respuesta Correcta.";
+                setTimeout(generateRandomPractice, 1500);
+            } else {
+                playSound('wrong');
+                feedback.className = "text-xs font-bold mt-1.5 h-4 text-center text-red-400";
+                feedback.textContent = "❌ Incorrecto. ¡Vuelve a intentarlo!";
+            }
+        }
+
+        /* GAME ENGINE & ARCADE LOGIC */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const naveImg = new Image();
+        naveImg.src = 'nave.png';
+
+        let gameActive = false;
+        let playerMode = 1; 
+        let difficulty = 'easy'; 
+        let gameTimeLeft = 120;
+        let gameTimerInterval = null;
+        let animationFrameId = null;
+
+        const STAGE_DISTANCES = [1000, 2500, 4500];
+
+        // Boss Entity for EXTREME Mode
+        let boss = {
+            active: false,
+            x: 0,
+            y: 40,
+            width: 140,
+            height: 60,
+            vx: 3,
+            hp: 100,
+            maxHp: 100,
+            shootCooldown: 0
+        };
+        let bossLasers = [];
+
+        // Individual player math question states
+        let p1Answering = false;
+        let p2Answering = false;
+        let p1MathTarget = null;
+        let p2MathTarget = null;
+        let p1Attempts = 2;
+        let p2Attempts = 2;
+        let p1Timer10s = 0;
+        let p2Timer10s = 0;
+
+        // =====================================================
+        // BLUETOOTH BLE - ESP32
+        // Comandos que ya utiliza el ESP32:
+        // Q1_OK, Q2_OK, Q3_OK, ERROR y RESET
+        // =====================================================
+        const BLE_SERVICE_UUID = "12345678-1234-1234-1234-123456789abc";
+        const BLE_CHARACTERISTIC_UUID = "abcdefab-1234-1234-1234-123456789abc";
+        let bleDevice = null;
+        let bleCharacteristic = null;
+
+        // Solo controla los avisos al ESP32; no cambia la mecánica del juego.
+        let p1CorrectCount = 0;
+        let p2CorrectCount = 0;
+
+        function setBLEStatus(text, connected = false) {
+            const status = document.getElementById('bleStatus');
+            const btn = document.getElementById('bleConnectBtn');
+            if (status) {
+                status.textContent = text;
+                status.className = connected
+                    ? 'text-xs font-bold text-emerald-400 hidden sm:inline'
+                    : 'text-xs font-bold text-slate-400 hidden sm:inline';
+            }
+            if (btn) btn.textContent = connected ? '📡 ESP32 conectado' : '📡 Conectar ESP32';
+        }
+
+        async function connectBLE() {
+            if (!navigator.bluetooth) {
+                alert('Este navegador no permite Bluetooth BLE. Usa Google Chrome compatible y abre el juego desde HTTPS o localhost.');
+                return;
+            }
+            try {
+                setBLEStatus('Buscando ESP32...');
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ services: [BLE_SERVICE_UUID] }],
+                    optionalServices: [BLE_SERVICE_UUID]
+                });
+                bleDevice.addEventListener('gattserverdisconnected', onBLEDisconnected);
+                const server = await bleDevice.gatt.connect();
+                const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+                bleCharacteristic = await service.getCharacteristic(BLE_CHARACTERISTIC_UUID);
+                setBLEStatus('Conectado ✓', true);
+                await sendBLECommand('RESET');
+            } catch (error) {
+                console.error('BLE:', error);
+                bleCharacteristic = null;
+                setBLEStatus(error && error.name === 'NotFoundError' ? 'Sin dispositivo' : 'Error de conexión');
+            }
+        }
+
+        function onBLEDisconnected() {
+            bleCharacteristic = null;
+            setBLEStatus('Desconectado');
+        }
+
+        async function sendBLECommand(command) {
+            if (!bleCharacteristic) {
+                console.log('BLE no conectado. Comando no enviado:', command);
+                return false;
+            }
+            try {
+                const data = new TextEncoder().encode(command);
+                if (bleCharacteristic.writeValueWithoutResponse) {
+                    await bleCharacteristic.writeValueWithoutResponse(data);
+                } else {
+                    await bleCharacteristic.writeValue(data);
+                }
+                console.log('BLE -> ESP32:', command);
+                return true;
+            } catch (error) {
+                console.error('No se pudo enviar', command, error);
+                setBLEStatus('Desconectado');
+                bleCharacteristic = null;
+                return false;
+            }
+        }
+
+        async function sendCorrectToESP32(playerNum) {
+            let command = null;
+
+            if (playerNum === 1) {
+                if (p1CorrectCount >= 3) return { command: null, sent: false, count: p1CorrectCount };
+                p1CorrectCount++;
+                command = p1CorrectCount === 1 ? 'Q1_OK'
+                        : p1CorrectCount === 2 ? 'Q2_OK'
+                        : 'Q3_OK';
+            } else {
+                if (p2CorrectCount >= 3) return { command: null, sent: false, count: p2CorrectCount };
+                p2CorrectCount++;
+                command = p2CorrectCount === 1 ? 'Q1_OK'
+                        : p2CorrectCount === 2 ? 'Q2_OK'
+                        : 'Q3_OK';
+            }
+
+            const currentCount = playerNum === 1 ? p1CorrectCount : p2CorrectCount;
+
+            // Esperamos a que el comando termine de enviarse antes de continuar.
+            const sent = await sendBLECommand(command);
+
+            // Q3 es el último comando: dejamos que el ESP32 procese
+            // el mensaje y mueva el servo antes de cerrar la partida.
+            if (command === 'Q3_OK') {
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            }
+
+            return { command, sent, count: currentCount };
+        }
+
+        function sendErrorToESP32() {
+            sendBLECommand('ERROR');
+        }
+
+        let keysPressed = {};
+        const virtualControls = { p1Left: false, p1Right: false, p1Up: false, p1Down: false, p1Shoot: false, p2Left: false, p2Right: false, p2Up: false, p2Down: false, p2Shoot: false };
+
+        let p1 = { x: 100, y: 300, width: 36, height: 36, stage: 1, distance: 0, slowTimer: 0, active: true };
+        let p2 = { x: 200, y: 300, width: 36, height: 36, stage: 1, distance: 0, slowTimer: 0, active: false };
+        let bullets = [];
+        let asteroids = [];
+        let particles = [];
+        let stars = [];
+        let p1ShootCooldown = 0;
+        let p2ShootCooldown = 0;
+
+        function resizeCanvas() {
+            if (!canvas.parentElement) return;
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            
+            stars = [];
+            for (let i = 0; i < 70; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speed: Math.random() * 2 + 1
+                });
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function setPlayerMode(mode) {
+            playerMode = mode;
+            document.getElementById('p1ModeBtn').className = mode === 1 
+                ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition" 
+                : "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition";
+            document.getElementById('p2ModeBtn').className = mode === 2 
+                ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 transition" 
+                : "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition";
+            
+            const p2Hud = document.getElementById('p2HudBox');
+            if (mode === 2) {
+                p2Hud.classList.remove('opacity-40');
+            } else {
+                p2Hud.classList.add('opacity-40');
+            }
+        }
+
+        function setDifficulty(diff) {
+            difficulty = diff;
+            const btnEasy = document.getElementById('diffEasyBtn');
+            const btnMed = document.getElementById('diffMedBtn');
+            const btnHard = document.getElementById('diffHardBtn');
+            const btnExt = document.getElementById('diffExtremeBtn');
+
+            const inactiveClass = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition";
+            btnEasy.className = diff === 'easy' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition" : inactiveClass;
+            btnMed.className = diff === 'medium' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition" : inactiveClass;
+            btnHard.className = diff === 'hard' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition" : inactiveClass;
+            btnExt.className = diff === 'extreme' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white transition" : inactiveClass;
+
+            if (diff === 'easy') { gameTimeLeft = 120; }
+            else if (diff === 'medium') { gameTimeLeft = 180; }
+            else if (diff === 'hard') { gameTimeLeft = 180; }
+            else if (diff === 'extreme') { gameTimeLeft = 100; }
+
+            updateHUD();
+
+            if (gameActive) {
+                startGameEngine();
+            }
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            updatePhysics();
+            draw();
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+
+        function updateHUD() {
+            document.getElementById('p1Score').textContent = `${Math.floor(p1.distance)}m`;
+            document.getElementById('p2Score').textContent = `${Math.floor(p2.distance)}m`;
+
+            const p1Badge = document.getElementById('p1SlowBadge');
+            const p2Badge = document.getElementById('p2SlowBadge');
+            if (p1Badge) p1Badge.className = p1.slowTimer > 0 ? "px-1 bg-red-500/20 text-red-400 text-[10px] rounded border border-red-500/40 animate-pulse" : "hidden";
+            if (p2Badge) p2Badge.className = p2.slowTimer > 0 ? "px-1 bg-red-500/20 text-red-400 text-[10px] rounded border border-red-500/40 animate-pulse" : "hidden";
+
+            const maxDistancePlayer = Math.max(p1.distance, p2.distance);
+            let currentStageDisplay = 1;
+            if (maxDistancePlayer >= STAGE_DISTANCES[1]) currentStageDisplay = 3;
+            else if (maxDistancePlayer >= STAGE_DISTANCES[0]) currentStageDisplay = 2;
+
+            document.getElementById('stageText').textContent = `Etapa ${currentStageDisplay}/3`;
+
+            const mins = Math.floor(gameTimeLeft / 60).toString().padStart(2, '0');
+            const secs = (gameTimeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('gameTimer').textContent = `${mins}:${secs}`;
+        }
+
+        function returnToMainMenu() {
+            stopGameEngine();
+            sendBLECommand('RESET');
+            p1CorrectCount = 0;
+            p2CorrectCount = 0;
+            document.getElementById('startOverlay').classList.remove('hidden');
+            document.getElementById('mathModalP1').classList.add('hidden');
+            document.getElementById('mathModalP2').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.add('hidden');
+            document.getElementById('victoryModal').classList.add('hidden');
+        }
+
+        function startGameEngine() {
+            resizeCanvas();
+            document.getElementById('startOverlay').classList.add('hidden');
+            document.getElementById('mathModalP1').classList.add('hidden');
+            document.getElementById('mathModalP2').classList.add('hidden');
+            document.getElementById('gameOverModal').classList.add('hidden');
+            document.getElementById('victoryModal').classList.add('hidden');
+
+            const halfWidth = canvas.width / 2;
+
+            p1 = { 
+                x: playerMode === 2 ? halfWidth * 0.4 : canvas.width * 0.45, 
+                y: canvas.height * 0.75, 
+                width: 36, height: 36, stage: 1, distance: 0, slowTimer: 0, active: true 
+            };
+            
+            p2 = { 
+                x: halfWidth + halfWidth * 0.4, 
+                y: canvas.height * 0.75, 
+                width: 36, height: 36, stage: 1, distance: 0, slowTimer: 0, active: playerMode === 2 
+            };
+
+            bullets = [];
+            asteroids = [];
+            particles = [];
+            bossLasers = [];
+            
+            p1Answering = false;
+            p2Answering = false;
+            p1Timer10s = 0;
+            p2Timer10s = 0;
+
+            p1CorrectCount = 0;
+            p2CorrectCount = 0;
+            sendBLECommand('RESET');
+
+            if (difficulty === 'extreme') {
+                boss.active = true;
+                boss.hp = 100;
+                boss.maxHp = 100;
+                boss.x = canvas.width / 2 - boss.width / 2;
+                boss.shootCooldown = 60;
+                gameTimeLeft = 100;
+            } else {
+                boss.active = false;
+                if (difficulty === 'easy') gameTimeLeft = 120;
+                else gameTimeLeft = 180;
+            }
+
+            updateHUD();
+
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            gameTimerInterval = setInterval(() => {
+                if (!gameActive) return;
+                gameTimeLeft--;
+                updateHUD();
+                checkGameEndConditions();
+            }, 1000);
+
+            gameActive = true;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        }
+
+        function checkGameEndConditions() {
+            if (gameTimeLeft <= 0) {
+                endGame(false, "⌛ ¡Se ha agotado el tiempo de la misión!");
+            }
+        }
+
+        function endGame(isVictory, reasonText = "") {
+            gameActive = false;
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            if (isVictory) {
+                playSound('correct');
+                const vicModal = document.getElementById('victoryModal');
+                let scoreText = `P1: ${Math.floor(p1.distance)}m`;
+                if (playerMode === 2) {
+                    const winner = p1.distance >= STAGE_DISTANCES[2] ? "🏆 ¡JUGADOR 1 GANA LA CARRERA!" : "🏆 ¡JUGADOR 2 GANA LA CARRERA!";
+                    scoreText = `${winner}\n(P1: ${Math.floor(p1.distance)}m | P2: ${Math.floor(p2.distance)}m)`;
+                }
+                document.getElementById('finalScoreText').textContent = "🎉 ¡GANASTE! TOMA TU PREMIO 🎁";
+                vicModal.classList.remove('hidden');
+            } else {
+                playSound('lose');
+                const goModal = document.getElementById('gameOverModal');
+                if (reasonText) {
+                    document.getElementById('gameOverReason').textContent = reasonText;
+                }
+                goModal.classList.remove('hidden');
+            }
+        }
+
+        function stopGameEngine() {
+            gameActive = false;
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        }
+
+        function triggerPlayerQuestion(playerNum) {
+            const prob = generateMathProblem();
+            if (playerNum === 1) {
+                p1Answering = true;
+                p1MathTarget = prob;
+                p1Attempts = 2;
+                
+                document.getElementById('p1QuestionText').textContent = `${prob.num1} × ${prob.num2} = ?`;
+                document.getElementById('p1AttemptsTag').textContent = `🎯 Intentos: ${p1Attempts}/2`;
+                document.getElementById('p1Feedback').textContent = '';
+                
+                const modal = document.getElementById('mathModalP1');
+                if (playerMode === 1) {
+                    modal.className = "absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 z-30 border-amber-500/30";
+                } else {
+                    modal.className = "absolute left-0 top-0 bottom-0 w-1/2 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-3 z-30 border-r border-amber-500/30";
+                }
+                
+                const grid = document.getElementById('p1ChoicesGrid');
+                grid.innerHTML = '';
+                prob.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = "py-2 px-3 rounded-lg bg-slate-900 border border-slate-700 hover:border-amber-400 text-amber-300 font-orbitron font-bold text-sm transition active:scale-95";
+                    btn.textContent = choice.toLocaleString();
+                    btn.onclick = () => handlePlayerAnswer(1, choice, btn);
+                    grid.appendChild(btn);
+                });
+                modal.classList.remove('hidden');
+            } else if (playerNum === 2) {
+                p2Answering = true;
+                p2MathTarget = prob;
+                p2Attempts = 2;
+
+                document.getElementById('p2QuestionText').textContent = `${prob.num1} × ${prob.num2} = ?`;
+                document.getElementById('p2AttemptsTag').textContent = `🎯 Intentos: ${p2Attempts}/2`;
+                document.getElementById('p2Feedback').textContent = '';
+
+                const modal = document.getElementById('mathModalP2');
+                const grid = document.getElementById('p2ChoicesGrid');
+                grid.innerHTML = '';
+                prob.choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = "py-2 px-3 rounded-lg bg-slate-900 border border-slate-700 hover:border-sky-400 text-sky-300 font-orbitron font-bold text-sm transition active:scale-95";
+                    btn.textContent = choice.toLocaleString();
+                    btn.onclick = () => handlePlayerAnswer(2, choice, btn);
+                    grid.appendChild(btn);
+                });
+                modal.classList.remove('hidden');
+            }
+        }
+
+        async function handlePlayerAnswer(playerNum, choice, clickedBtn) {
+            const target = (playerNum === 1) ? p1MathTarget : p2MathTarget;
+            const feedbackEl = document.getElementById(playerNum === 1 ? 'p1Feedback' : 'p2Feedback');
+            const attemptsTag = document.getElementById(playerNum === 1 ? 'p1AttemptsTag' : 'p2AttemptsTag');
+            const modal = document.getElementById(playerNum === 1 ? 'mathModalP1' : 'mathModalP2');
+            const playerObj = (playerNum === 1) ? p1 : p2;
+
+            if (choice === target.answer) {
+                playSound('correct');
+                if (feedbackEl) feedbackEl.textContent = "¡Correcto! Envitando datos...";
+                
+                // Esperamos la transmisión del comando BLE y el retardo del servo si es la 3era
+                const bleResult = await sendCorrectToESP32(playerNum);
+                
+                modal.classList.add('hidden');
+                
+                if (playerNum === 1) {
+                    p1Answering = false;
+                    p1Timer10s = 0;
+                } else {
+                    p2Answering = false;
+                    p2Timer10s = 0;
+                }
+
+                playerObj.distance += 200;
+                updateHUD();
+
+                if (bleResult.count >= 3) {
+                    endGame(true);
+                }
+            } else {
+                playSound('wrong');
+                sendErrorToESP32();
+                if (playerNum === 1) p1Attempts--;
+                else p2Attempts--;
+
+                if (clickedBtn) {
+                    clickedBtn.disabled = true;
+                    clickedBtn.className = "py-2 px-3 rounded-lg bg-red-950/60 border border-red-500/50 text-red-400/60 font-orbitron font-bold text-sm cursor-not-allowed line-through";
+                }
+
+                const currentAttempts = playerNum === 1 ? p1Attempts : p2Attempts;
+                attemptsTag.textContent = `🎯 Intentos: ${currentAttempts}/2`;
+
+                if (currentAttempts > 0) {
+                    if (feedbackEl) feedbackEl.textContent = "❌ Intenta de nuevo";
+                } else {
+                    if (feedbackEl) feedbackEl.textContent = "❌ Lento (-100m)";
+                    playerObj.distance = Math.max(0, playerObj.distance - 100);
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        if (playerNum === 1) {
+                            p1Answering = false;
+                            p1Timer10s = 0;
+                        } else {
+                            p2Answering = false;
+                            p2Timer10s = 0;
+                        }
+                    }, 800);
+                }
+            }
+        }
+
+        function updatePhysics() {
+            if (p1ShootCooldown > 0) p1ShootCooldown--;
+            if (p2ShootCooldown > 0) p2ShootCooldown--;
+
+            if (p1.slowTimer > 0) p1.slowTimer--;
+            if (p2.slowTimer > 0) p2.slowTimer--;
+
+            const midX = canvas.width / 2;
+
+            // Timer Every 10 Seconds (600 frames at 60fps)
+            if (!p1Answering) {
+                p1Timer10s++;
+                if (p1Timer10s >= 600) {
+                    p1Timer10s = 0;
+                    triggerPlayerQuestion(1);
+                }
+            }
+
+            if (playerMode === 2 && !p2Answering) {
+                p2Timer10s++;
+                if (p2Timer10s >= 600) {
+                    p2Timer10s = 0;
+                    triggerPlayerQuestion(2);
+                }
+            }
+
+            // BOSS AI in EXTREME Mode
+            if (boss.active) {
+                boss.x += boss.vx;
+                if (boss.x <= 10 || boss.x + boss.width >= canvas.width - 10) {
+                    boss.vx *= -1;
+                }
+
+                boss.shootCooldown--;
+                if (boss.shootCooldown <= 0) {
+                    boss.shootCooldown = Math.floor(Math.random() * 40) + 45; // Fires every ~1 second
+                    
+                    // Fire 2 crimson laser beams from Boss cannons
+                    bossLasers.push({
+                        x: boss.x + 25,
+                        y: boss.y + boss.height,
+                        width: 8,
+                        height: 24,
+                        vy: 8
+                    });
+                    bossLasers.push({
+                        x: boss.x + boss.width - 33,
+                        y: boss.y + boss.height,
+                        width: 8,
+                        height: 24,
+                        vy: 8
+                    });
+                    playSound('bossLaser');
+                }
+            }
+
+            // Boss Lasers Movement & Hit Detection (LOSE CONDITION ON HIT)
+            for (let i = bossLasers.length - 1; i >= 0; i--) {
+                const l = bossLasers[i];
+                l.y += l.vy;
+
+                if (l.y > canvas.height + 30) {
+                    bossLasers.splice(i, 1);
+                    continue;
+                }
+
+                // Check collision with P1
+                if (p1.active && !p1Answering && l.x < p1.x + p1.width && l.x + l.width > p1.x && l.y < p1.y + p1.height && l.y + l.height > p1.y) {
+                    createExplosion(p1.x + p1.width / 2, p1.y + p1.height / 2, '#ef4444');
+                    bossLasers.splice(i, 1);
+                    endGame(false, "💥 ¡Tu nave fue impactada por el RAYO LÁSER DEL BOSS!");
+                    return;
+                }
+
+                // Check collision with P2
+                if (p2.active && !p2Answering && l.x < p2.x + p2.width && l.x + l.width > p2.x && l.y < p2.y + p2.height && l.y + l.height > p2.y) {
+                    createExplosion(p2.x + p2.width / 2, p2.y + p2.height / 2, '#ef4444');
+                    bossLasers.splice(i, 1);
+                    endGame(false, "💥 ¡Nave impactada por el RAYO LÁSER DEL BOSS!");
+                    return;
+                }
+            }
+
+            // Player 1 Movement Logic
+            if (p1.active && !p1Answering) {
+                const p1Speed = p1.slowTimer > 0 ? 3 : 11;
+                
+                const p1Left = keysPressed['KeyA'] || keysPressed['a'] || keysPressed['A'] || (playerMode === 1 && (keysPressed['ArrowLeft'] || keysPressed['Left'])) || virtualControls.p1Left;
+                const p1Right = keysPressed['KeyD'] || keysPressed['d'] || keysPressed['D'] || (playerMode === 1 && (keysPressed['ArrowRight'] || keysPressed['Right'])) || virtualControls.p1Right;
+                const p1Up = keysPressed['KeyW'] || keysPressed['w'] || keysPressed['W'] || (playerMode === 1 && (keysPressed['ArrowUp'] || keysPressed['Up'])) || virtualControls.p1Up;
+                const p1Down = keysPressed['KeyS'] || keysPressed['s'] || keysPressed['S'] || (playerMode === 1 && (keysPressed['ArrowDown'] || keysPressed['Down'])) || virtualControls.p1Down;
+                const p1Shoot = (keysPressed['Space'] || keysPressed[' '] || keysPressed['KeyF'] || keysPressed['f']) || virtualControls.p1Shoot;
+
+                const maxX1 = playerMode === 2 ? midX - p1.width - 5 : canvas.width - p1.width - 5;
+
+                if (p1Left && p1.x > 5) p1.x -= p1Speed;
+                if (p1Right && p1.x < maxX1) p1.x += p1Speed;
+                if (p1Up && p1.y > canvas.height * 0.20) p1.y -= p1Speed;
+                if (p1Down && p1.y < canvas.height - p1.height - 10) p1.y += p1Speed;
+
+                p1.distance += (p1Speed / 3);
+
+                if (p1Shoot && p1ShootCooldown === 0) {
+                    const p1Color = playerMode === 1 ? '#22c55e' : '#a855f7';
+                    fireBullet(p1, p1Color);
+                    p1ShootCooldown = 10;
+                }
+
+                // Llegar a la meta no termina la partida: debe completar 3 preguntas.
+                // La meta solo marca el avance de la carrera.
+                if (p1.distance >= STAGE_DISTANCES[2]) {
+                    p1.distance = STAGE_DISTANCES[2];
+                }
+            }
+
+            // Player 2 Movement Logic
+            if (p2.active && !p2Answering) {
+                const p2Speed = p2.slowTimer > 0 ? 3 : 11;
+
+                const p2Left = keysPressed['ArrowLeft'] || keysPressed['Left'] || virtualControls.p2Left;
+                const p2Right = keysPressed['ArrowRight'] || keysPressed['Right'] || virtualControls.p2Right;
+                const p2Up = keysPressed['ArrowUp'] || keysPressed['Up'] || virtualControls.p2Up;
+                const p2Down = keysPressed['ArrowDown'] || keysPressed['Down'] || virtualControls.p2Down;
+                const p2Shoot = keysPressed['ControlRight'] || keysPressed['ControlLeft'] || keysPressed['Control'] || virtualControls.p2Shoot;
+
+                const minX2 = midX + 5;
+
+                if (p2Left && p2.x > minX2) p2.x -= p2Speed;
+                if (p2Right && p2.x < canvas.width - p2.width - 5) p2.x += p2Speed;
+                if (p2Up && p2.y > canvas.height * 0.20) p2.y -= p2Speed;
+                if (p2Down && p2.y < canvas.height - p2.height - 10) p2.y += p2Speed;
+
+                p2.distance += (p2Speed / 3);
+
+                if (p2Shoot && p2ShootCooldown === 0) {
+                    fireBullet(p2, '#38bdf8');
+                    p2ShootCooldown = 10;
+                }
+
+                // Llegar a la meta no termina la partida: debe completar 3 preguntas.
+                if (p2.distance >= STAGE_DISTANCES[2]) {
+                    p2.distance = STAGE_DISTANCES[2];
+                }
+            }
+
+            // Bullets logic
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const b = bullets[i];
+                b.y += b.vy;
+
+                if (b.y < -20) {
+                    bullets.splice(i, 1);
+                    continue;
+                }
+
+                // Bullet hitting Boss
+                if (boss.active && b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
+                    createExplosion(b.x, b.y, '#f59e0b');
+                    bullets.splice(i, 1);
+                    boss.hp -= 2;
+                    if (boss.hp <= 0) {
+                        boss.active = false;
+                        createExplosion(boss.x + boss.width / 2, boss.y + boss.height / 2, '#ef4444');
+                        endGame(true, "🏆 ¡HAS DESTRUIDO AL BOSS Y SALVADO LA GALAXIA!");
+                        return;
+                    }
+                    continue;
+                }
+
+                // Bullet hitting Asteroids
+                for (let j = asteroids.length - 1; j >= 0; j--) {
+                    const ast = asteroids[j];
+                    if (b.x < ast.x + ast.radius * 2 && b.x + b.width > ast.x && b.y < ast.y + ast.radius * 2 && b.y + b.height > ast.y) {
+                        createExplosion(ast.x + ast.radius, ast.y + ast.radius, '#f59e0b');
+                        asteroids.splice(j, 1);
+                        bullets.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Spawn Asteroids
+            if (Math.random() < 0.05 && asteroids.length < 12) {
+                const rad = Math.random() * 14 + 18;
+                let spawnX;
+                if (playerMode === 2) {
+                    const spawnLeft = Math.random() < 0.5;
+                    spawnX = spawnLeft 
+                        ? Math.random() * (midX - rad * 2 - 10) + 5
+                        : midX + 10 + Math.random() * (midX - rad * 2 - 15);
+                } else {
+                    spawnX = Math.random() * (canvas.width - rad * 2);
+                }
+
+                asteroids.push({
+                    x: spawnX,
+                    y: -rad * 2,
+                    radius: rad,
+                    vy: Math.random() * 2.5 + 2,
+                    vx: (Math.random() - 0.5) * 1.5
+                });
+            }
+
+            // Asteroid Collisions
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                const ast = asteroids[i];
+                ast.y += ast.vy;
+                ast.x += ast.vx;
+
+                if (p1.active && !p1Answering && ast.x < p1.x + p1.width && ast.x + ast.radius * 2 > p1.x && ast.y < p1.y + p1.height && ast.y + ast.radius * 2 > p1.y) {
+                    asteroids.splice(i, 1);
+                    createExplosion(p1.x + p1.width / 2, p1.y + p1.height / 2, '#ef4444');
+
+                    if (playerMode === 1) {
+                        playSound('wrong');
+                        returnToMainMenu();
+                        return;
+                    } else {
+                        playSound('wrong');
+                        p1.slowTimer = 180;
+                        updateHUD();
+                    }
+                } 
+                else if (p2.active && !p2Answering && ast.x < p2.x + p2.width && ast.x + ast.radius * 2 > p2.x && ast.y < p2.y + p2.height && ast.y + ast.radius * 2 > p2.y) {
+                    asteroids.splice(i, 1);
+                    createExplosion(p2.x + p2.width / 2, p2.y + p2.height / 2, '#ef4444');
+
+                    playSound('wrong');
+                    p2.slowTimer = 180;
+                    updateHUD();
+                } else if (ast.y > canvas.height + 40) {
+                    asteroids.splice(i, 1);
+                }
+            }
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.03;
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            // Stars
+            stars.forEach(st => {
+                st.y += st.speed;
+                if (st.y > canvas.height) {
+                    st.y = 0;
+                    st.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Stars
+            ctx.fillStyle = '#ffffff';
+            stars.forEach(st => {
+                ctx.globalAlpha = Math.random() * 0.5 + 0.5;
+                ctx.fillRect(st.x, st.y, st.size, st.size);
+            });
+            ctx.globalAlpha = 1;
+
+            // Divider line in 2P mode
+            if (playerMode === 2) {
+                const midX = canvas.width / 2;
+                ctx.save();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([12, 8]);
+                ctx.beginPath();
+                ctx.moveTo(midX, 0);
+                ctx.lineTo(midX, canvas.height);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(168, 85, 247, 0.5)';
+                ctx.font = '900 12px Orbitron, sans-serif';
+                ctx.fillText('CARRERA P1', 20, 25);
+
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
+                ctx.fillText('CARRERA P2', midX + 20, 25);
+                ctx.restore();
+            }
+
+            // Draw Boss in EXTREME Mode
+            if (boss.active) {
+                ctx.save();
+                // Boss HP Bar
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+                ctx.fillRect(canvas.width / 2 - 100, 10, 200, 16);
+                ctx.fillStyle = '#ef4444';
+                const hpWidth = Math.max(0, (boss.hp / boss.maxHp) * 196);
+                ctx.fillRect(canvas.width / 2 - 98, 12, hpWidth, 12);
+                ctx.strokeStyle = '#f87171';
+                ctx.strokeRect(canvas.width / 2 - 100, 10, 200, 16);
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 10px Orbitron, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`BOSS HP: ${Math.ceil(boss.hp)}%`, canvas.width / 2, 22);
+
+                // Boss Ship Body
+                ctx.fillStyle = '#dc2626';
+                ctx.shadowColor = '#f87171';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.moveTo(boss.x + boss.width / 2, boss.y + boss.height);
+                ctx.lineTo(boss.x + boss.width, boss.y);
+                ctx.lineTo(boss.x + boss.width - 20, boss.y - 10);
+                ctx.lineTo(boss.x + 20, boss.y - 10);
+                ctx.lineTo(boss.x, boss.y);
+                ctx.closePath();
+                ctx.fill();
+
+                // Boss Core
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(boss.x + boss.width / 2, boss.y + 20, 14, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            // Draw Boss Lasers
+            bossLasers.forEach(l => {
+                ctx.save();
+                ctx.fillStyle = '#ef4444';
+                ctx.shadowColor = '#f87171';
+                ctx.shadowBlur = 12;
+                ctx.fillRect(l.x, l.y, l.width, l.height);
+                ctx.restore();
+            });
+
+            // Draw Player 1 with nave.png
+            if (p1.active) {
+                ctx.save();
+                if (p1.slowTimer > 0) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ef4444';
+                }
+                if (naveImg.complete && naveImg.naturalWidth > 0) {
+                    ctx.drawImage(naveImg, p1.x, p1.y, p1.width, p1.height);
+                } else {
+                    ctx.fillStyle = playerMode === 1 ? '#22c55e' : '#a855f7';
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x + p1.width / 2, p1.y);
+                    ctx.lineTo(p1.x + p1.width, p1.y + p1.height);
+                    ctx.lineTo(p1.x, p1.y + p1.height);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            // Draw Player 2 with nave.png
+            if (p2.active) {
+                ctx.save();
+                if (p2.slowTimer > 0) {
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = '#ef4444';
+                }
+                if (naveImg.complete && naveImg.naturalWidth > 0) {
+                    ctx.drawImage(naveImg, p2.x, p2.y, p2.width, p2.height);
+                } else {
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.moveTo(p2.x + p2.width / 2, p2.y);
+                    ctx.lineTo(p2.x + p2.width, p2.y + p2.height);
+                    ctx.lineTo(p2.x, p2.y + p2.height);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+
+            // Bullets
+            bullets.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, b.width, b.height);
+            });
+
+            // Asteroids
+            ctx.fillStyle = '#64748b';
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            asteroids.forEach(ast => {
+                ctx.beginPath();
+                ctx.arc(ast.x + ast.radius, ast.y + ast.radius, ast.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            });
+
+            // Particles
+            particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function fireBullet(playerObj, color) {
+            bullets.push({
+                x: playerObj.x + playerObj.width / 2 - 2.5,
+                y: playerObj.y,
+                width: 5,
+                height: 14,
+                vy: -12,
+                color: color,
+                player: playerObj
+            });
+            playSound('laser');
+        }
+
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    radius: Math.random() * 3 + 2,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function generateMathProblem() {
+            let n1, n2;
+            if (difficulty === 'easy') {
+                n1 = Math.floor(Math.random() * 90) + 10;
+                n2 = Math.floor(Math.random() * 90) + 10;
+            } else if (difficulty === 'medium') {
+                n1 = Math.floor(Math.random() * 900) + 100;
+                n2 = Math.floor(Math.random() * 90) + 10;
+            } else if (difficulty === 'hard') {
+                n1 = Math.floor(Math.random() * 900) + 100;
+                n2 = Math.floor(Math.random() * 900) + 100;
+            } else {
+                n1 = Math.floor(Math.random() * 9000) + 1000;
+                n2 = Math.floor(Math.random() * 900) + 100;
+            }
+
+            const answer = n1 * n2;
+            const choices = new Set([answer]);
+
+            while (choices.size < 4) {
+                const offset = (Math.floor(Math.random() * 10) - 5) * (Math.random() < 0.5 ? 10 : 1);
+                const wrong = answer + (offset === 0 ? 15 : offset);
+                if (wrong > 0) choices.add(wrong);
+            }
+
+            return {
+                num1: n1,
+                num2: n2,
+                answer: answer,
+                choices: Array.from(choices).sort(() => Math.random() - 0.5)
+            };
+        }
+
+        function setupInputListeners() {
+            window.addEventListener('keydown', (e) => {
+                keysPressed[e.code] = true;
+                keysPressed[e.key] = true;
+
+                if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key) || 
+                    ["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) {
+                    if (gameActive) e.preventDefault();
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                keysPressed[e.code] = false;
+                keysPressed[e.key] = false;
+            });
+
+            const bindButton = (btnId, keyName) => {
+                const btn = document.getElementById(btnId);
+                if (!btn) return;
+
+                const start = (e) => { e.preventDefault(); virtualControls[keyName] = true; };
+                const end = (e) => { e.preventDefault(); virtualControls[keyName] = false; };
+
+                btn.addEventListener('mousedown', start);
+                btn.addEventListener('mouseup', end);
+                btn.addEventListener('mouseleave', end);
+                btn.addEventListener('touchstart', start, { passive: false });
+                btn.addEventListener('touchend', end, { passive: false });
+            };
+
+            bindButton('btnP1Left', 'p1Left');
+            bindButton('btnP1Right', 'p1Right');
+            bindButton('btnP1Up', 'p1Up');
+            bindButton('btnP1Down', 'p1Down');
+            bindButton('btnP1Shoot', 'p1Shoot');
+        }
+
+        /* Initialization On Window Load */
+        window.onload = function() {
+            onTutorInputChanged();
+            generateRandomPractice();
+            setupInputListeners();
+            resizeCanvas();
+        };
+    </script>
+</body>
+</html>
