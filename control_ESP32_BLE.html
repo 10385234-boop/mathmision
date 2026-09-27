@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control ESP32 BLE</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; font-family:Arial,sans-serif;
+    background:linear-gradient(135deg,#0f172a,#1e293b);
+    color:white; display:flex; justify-content:center; align-items:center;
+    padding:20px;
+  }
+  .card{
+    width:min(520px,100%); background:#111827; border-radius:24px;
+    padding:28px; box-shadow:0 15px 40px rgba(0,0,0,.35);
+  }
+  h1{text-align:center;margin:0 0 8px;font-size:30px}
+  .sub{text-align:center;color:#cbd5e1;margin-bottom:24px}
+  button{
+    width:100%; border:0; border-radius:15px; padding:17px;
+    margin:9px 0; font-size:18px; font-weight:bold; color:white;
+    cursor:pointer; transition:.15s; 
+  }
+  button:active{transform:scale(.98)}
+  #connect{background:#2563eb}
+  #red{background:#dc2626}
+  #blue{background:#2563eb}
+  #servo{background:#16a34a}
+  #disconnect{background:#475569}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .status{
+    margin:18px 0; padding:15px; border-radius:12px;
+    background:#1e293b; text-align:center; font-weight:bold;
+  }
+  .log{
+    background:#020617; border-radius:12px; padding:12px;
+    height:150px; overflow:auto; font-family:monospace;
+    font-size:13px; color:#cbd5e1;
+  }
+  .ok{color:#86efac}.err{color:#fca5a5}
+  .info{color:#93c5fd}
+  .note{font-size:13px;color:#94a3b8;text-align:center;margin-top:15px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔧 Control ESP32</h1>
+  <div class="sub">Prueba BLE de LEDs y servo</div>
+
+  <button id="connect">🔵 CONECTAR ESP32</button>
+
+  <div id="status" class="status">Estado: desconectado</div>
+
+  <button id="red" disabled>🔴 ENCENDER FOCO ROJO</button>
+  <button id="blue" disabled>🔵 ENCENDER FOCO AZUL</button>
+  <button id="servo" disabled>🎁 ABRIR SERVO / PREMIO</button>
+  <button id="disconnect" disabled>⛔ DESCONECTAR</button>
+
+  <div class="log" id="log"></div>
+
+  <div class="note">
+    Comandos utilizados: ERROR · Q1_OK · Q3_OK<br>
+    Esta página usa Bluetooth BLE directamente desde Chrome.
+  </div>
+</div>
+
+<script>
+const SERVICE_UUID = "12345678-1234-1234-1234-123456789abc";
+const CHARACTERISTIC_UUID = "abcdefab-1234-1234-1234-123456789abc";
+
+let device = null;
+let characteristic = null;
+
+const $ = id => document.getElementById(id);
+const status = $("status");
+const logBox = $("log");
+
+function log(text, type="info"){
+  const line = document.createElement("div");
+  line.className = type;
+  line.textContent = "[" + new Date().toLocaleTimeString() + "] " + text;
+  logBox.appendChild(line);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+function setConnected(connected){
+  $("red").disabled = !connected;
+  $("blue").disabled = !connected;
+  $("servo").disabled = !connected;
+  $("disconnect").disabled = !connected;
+  $("connect").disabled = connected;
+}
+
+async function connectBLE(){
+  if (!navigator.bluetooth){
+    status.textContent = "Bluetooth BLE no disponible";
+    log("Este navegador no permite Web Bluetooth.", "err");
+    return;
+  }
+
+  try{
+    log("Buscando ESP32...");
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{services:[SERVICE_UUID]}],
+      optionalServices: [SERVICE_UUID]
+    });
+
+    log("Dispositivo seleccionado: " + (device.name || "ESP32"));
+
+    device.addEventListener("gattserverdisconnected", ()=>{
+      characteristic = null;
+      setConnected(false);
+      status.textContent = "Estado: ESP32 desconectado";
+      log("ESP32 desconectado.", "err");
+    });
+
+    const server = await device.gatt.connect();
+    log("Conectado al servidor GATT.");
+
+    const service = await server.getPrimaryService(SERVICE_UUID);
+    log("Servicio BLE encontrado.");
+
+    characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+    log("Característica BLE encontrada.", "ok");
+
+    status.textContent = "Estado: ESP32 conectado ✅";
+    setConnected(true);
+    log("ESP32 LISTO PARA LAS PRUEBAS.", "ok");
+
+  }catch(error){
+    console.error(error);
+    status.textContent = "Estado: no se pudo conectar";
+    log("Error: " + error.message, "err");
+  }
+}
+
+async function sendCommand(command){
+  if(!characteristic){
+    log("Primero conecta el ESP32.", "err");
+    return;
+  }
+
+  try{
+    const data = new TextEncoder().encode(command);
+    await characteristic.writeValue(data);
+    status.textContent = "Último comando: " + command;
+    log("ENVIADO → " + command, "ok");
+  }catch(error){
+    console.error(error);
+    log("Error enviando " + command + ": " + error.message, "err");
+  }
+}
+
+async function disconnectBLE(){
+  try{
+    if(device && device.gatt.connected){
+      device.gatt.disconnect();
+    }
+  }catch(error){
+    console.error(error);
+  }
+  characteristic = null;
+  setConnected(false);
+  status.textContent = "Estado: desconectado";
+  log("Desconectado.");
+}
+
+$("connect").addEventListener("click", connectBLE);
+$("red").addEventListener("click", ()=>sendCommand("ERROR"));
+$("blue").addEventListener("click", ()=>sendCommand("Q1_OK"));
+$("servo").addEventListener("click", ()=>sendCommand("Q3_OK"));
+$("disconnect").addEventListener("click", disconnectBLE);
+
+log("Página lista.");
+log("Pulsa CONECTAR ESP32 para comenzar.");
+</script>
+</body>
+</html>
