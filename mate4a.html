@@ -301,7 +301,7 @@
                         🚩 <span id="stageText" class="font-orbitron">Etapa 1/3</span>
                     </div>
                     <div class="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 text-emerald-400">
-                        ⏳ <span id="gameTimer" class="font-orbitron">02:00</span>
+                        ⏳ <span id="gameTimer" class="font-orbitron">04:00</span>
                     </div>
                     <button onclick="returnToMainMenu()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition">
                         🏠 Menú
@@ -823,7 +823,7 @@
         let gameActive = false;
         let playerMode = 1; 
         let difficulty = 'easy'; 
-        let gameTimeLeft = 120;
+        let gameTimeLeft = 240;
         let gameTimerInterval = null;
         let animationFrameId = null;
 
@@ -1023,7 +1023,7 @@
             btnHard.className = diff === 'hard' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition" : inactiveClass;
             btnExt.className = diff === 'extreme' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white transition" : inactiveClass;
 
-            if (diff === 'easy') { gameTimeLeft = 120; }
+            if (diff === 'easy') { gameTimeLeft = 240; }
             else if (diff === 'medium') { gameTimeLeft = 180; }
             else if (diff === 'hard') { gameTimeLeft = 180; }
             else if (diff === 'extreme') { gameTimeLeft = 100; }
