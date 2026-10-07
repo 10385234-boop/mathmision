@@ -823,7 +823,7 @@
         let gameActive = false;
         let playerMode = 1; 
         let difficulty = 'easy'; 
-        let gameTimeLeft = 240;
+        let gameTimeLeft = 300;
         let gameTimerInterval = null;
         let animationFrameId = null;
 
@@ -1023,10 +1023,10 @@
             btnHard.className = diff === 'hard' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white transition" : inactiveClass;
             btnExt.className = diff === 'extreme' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white transition" : inactiveClass;
 
-            if (diff === 'easy') { gameTimeLeft = 240; }
-            else if (diff === 'medium') { gameTimeLeft = 240; }
-            else if (diff === 'hard') { gameTimeLeft = 240; }
-            else if (diff === 'extreme') { gameTimeLeft = 240; }
+            if (diff === 'easy') { gameTimeLeft = 300; }
+            else if (diff === 'medium') { gameTimeLeft = 300; }
+            else if (diff === 'hard') { gameTimeLeft = 300; }
+            else if (diff === 'extreme') { gameTimeLeft = 300; }
 
             updateHUD();
 
@@ -1123,11 +1123,11 @@
                 boss.maxHp = 100;
                 boss.x = canvas.width / 2 - boss.width / 2;
                 boss.shootCooldown = 60;
-                gameTimeLeft = 240;
+                gameTimeLeft = 300;
             } else {
                 boss.active = false;
-                if (difficulty === 'easy') gameTimeLeft = 240;
-                else gameTimeLeft = 240;
+                if (difficulty === 'easy') gameTimeLeft = 300;
+                else gameTimeLeft = 300;
             }
 
             updateHUD();
