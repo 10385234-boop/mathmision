@@ -1024,9 +1024,9 @@
             btnExt.className = diff === 'extreme' ? "px-3 py-1.5 rounded-lg text-xs font-bold bg-red-600 text-white transition" : inactiveClass;
 
             if (diff === 'easy') { gameTimeLeft = 240; }
-            else if (diff === 'medium') { gameTimeLeft = 180; }
-            else if (diff === 'hard') { gameTimeLeft = 180; }
-            else if (diff === 'extreme') { gameTimeLeft = 100; }
+            else if (diff === 'medium') { gameTimeLeft = 240; }
+            else if (diff === 'hard') { gameTimeLeft = 240; }
+            else if (diff === 'extreme') { gameTimeLeft = 240; }
 
             updateHUD();
 
@@ -1123,11 +1123,11 @@
                 boss.maxHp = 100;
                 boss.x = canvas.width / 2 - boss.width / 2;
                 boss.shootCooldown = 60;
-                gameTimeLeft = 100;
+                gameTimeLeft = 240;
             } else {
                 boss.active = false;
                 if (difficulty === 'easy') gameTimeLeft = 240;
-                else gameTimeLeft = 180;
+                else gameTimeLeft = 240;
             }
 
             updateHUD();
